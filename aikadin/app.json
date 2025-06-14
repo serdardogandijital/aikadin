@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "aikadin",
+    "slug": "aikadin",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "sdkVersion": "53.0.0",
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to let you select images for virtual try-on."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow aikadin to access your photo library to save virtual try-on results.",
+          "savePhotosPermission": "Allow aikadin to save virtual try-on photos to your photo library."
+        }
+      ]
+    ]
+  }
+}
