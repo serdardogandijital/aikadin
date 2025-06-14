@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   debugInfo: {
-    backgroundColor: theme.colors.grey[100],
+    backgroundColor: theme.colors.neutral[100],
     padding: theme.spacing.md,
     borderRadius: theme.borderRadius.sm,
     marginBottom: theme.spacing.lg,

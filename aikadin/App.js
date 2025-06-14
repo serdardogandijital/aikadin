@@ -6,18 +6,8 @@ import { registerRootComponent } from 'expo';
 import Toast from 'react-native-toast-message';
 import { RootNavigator } from './aikadin/src/navigation';
 import ErrorBoundary from './aikadin/src/components/ErrorBoundary';
-import { validateConfig } from './aikadin/src/config/env';
 
 function App() {
-  // Validate configuration on app start
-  React.useEffect(() => {
-    try {
-      validateConfig();
-    } catch (error) {
-      console.error('Configuration validation failed:', error);
-    }
-  }, []);
-
   return (
     <ErrorBoundary>
       <NavigationContainer>
