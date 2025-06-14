@@ -124,7 +124,7 @@ const HomeScreen: React.FC = () => {
       <Image source={{ uri: item.image }} style={styles.trendingImage} />
       <Text style={styles.trendingTitle}>{item.title}</Text>
       <View style={styles.likesContainer}>
-        <Ionicons name="heart" size={16} color={theme.colors.fashion.rose} />
+        <Ionicons name="heart" size={16} color={theme.colors.error.main} />
         <Text style={styles.likesText}>{item.likes}</Text>
       </View>
     </ModernCard>
@@ -194,7 +194,7 @@ const HomeScreen: React.FC = () => {
               onPress={() => navigation.navigate('Main', { screen: 'Wardrobe' })}
             >
               <View style={styles.quickActionIcon}>
-                <MaterialIcons name="checkroom" size={24} color={theme.colors.accent.main} />
+                <MaterialIcons name="checkroom" size={24} color={theme.colors.success.main} />
               </View>
               <Text style={styles.quickActionText}>Gardırobum</Text>
             </TouchableOpacity>
@@ -204,7 +204,7 @@ const HomeScreen: React.FC = () => {
               onPress={() => navigation.navigate('News')}
             >
               <View style={styles.quickActionIcon}>
-                <Ionicons name="analytics" size={24} color={theme.colors.fashion.coral} />
+                <Ionicons name="analytics" size={24} color={theme.colors.info.main} />
               </View>
               <Text style={styles.quickActionText}>İstatistikler</Text>
             </TouchableOpacity>
