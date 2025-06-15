@@ -1,6 +1,6 @@
 import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
-import * as ImageManipulator from 'expo-image-manipulator';
+import CONFIG from '../config/env';
 
 interface VirtualTryOnRequest {
   personImage: string;
@@ -15,44 +15,49 @@ interface VirtualTryOnResponse {
   processingTime?: number;
 }
 
-interface ClothingAnalysis {
-  dominantColor: { r: number; g: number; b: number };
-  brightness: number;
-  style: 'casual' | 'formal' | 'sporty' | 'elegant';
-}
-
 class VirtualTryOnService {
-  private readonly timeout = 60000; // 1 minute timeout
+  private readonly REPLICATE_API_URL = 'https://api.replicate.com/v1/predictions';
+  private readonly MODEL_VERSION = 'yisol/idm-vton:c871bb9b046607b680449ecbae55fd8c6d945e0a1948644bf2361b3d021d3ff4';
+  private readonly timeout = 300000; // 5 minutes for AI processing
 
   /**
-   * Main virtual try-on processing method
+   * Main virtual try-on processing using Replicate API
    */
   async processVirtualTryOn(request: VirtualTryOnRequest): Promise<VirtualTryOnResponse> {
     const startTime = Date.now();
     
     try {
-      console.log('🚀 Starting virtual try-on process...');
+      console.log('🚀 Starting Replicate virtual try-on...');
       
       // Validate inputs
       if (!request.personImage || !request.clothingImage) {
         throw new Error('Person image and clothing image are required');
       }
 
-      // Analyze clothing image
-      const clothingAnalysis = await this.analyzeClothing(request.clothingImage);
-      console.log('📊 Clothing analysis:', clothingAnalysis);
+      if (!CONFIG.REPLICATE_API_KEY) {
+        throw new Error('Replicate API key not configured');
+      }
 
-      // Create processed image
-      const resultImage = await this.createProcessedImage(
-        request.personImage,
-        clothingAnalysis,
+      // Convert images to base64 if they're file URIs
+      const personBase64 = await this.convertToBase64(request.personImage);
+      const clothingBase64 = await this.convertToBase64(request.clothingImage);
+
+      // Create prediction on Replicate
+      const prediction = await this.createReplicatePrediction(
+        personBase64,
+        clothingBase64,
         request.category
       );
+
+      console.log('📊 Prediction created:', prediction.id);
+
+      // Poll for results
+      const result = await this.pollForResult(prediction.id);
 
       console.log('✅ Virtual try-on completed successfully');
       
       return {
-        resultImage,
+        resultImage: result,
         success: true,
         processingTime: Date.now() - startTime
       };
@@ -70,337 +75,156 @@ class VirtualTryOnService {
   }
 
   /**
-   * Analyze clothing image to extract key characteristics
+   * Convert image URI to base64 data URL
    */
-  private async analyzeClothing(clothingImageUri: string): Promise<ClothingAnalysis> {
+  private async convertToBase64(imageUri: string): Promise<string> {
     try {
-      console.log('🔍 Analyzing clothing image...');
+      console.log('🔄 Converting image to base64...');
       
-      // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const base64 = await FileSystem.readAsStringAsync(imageUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
       
-      // Generate realistic analysis based on random factors
-      // In production, this would use actual image analysis
-      const colors = [
-        { r: 255, g: 0, b: 0 },     // Red
-        { r: 0, g: 0, b: 255 },     // Blue
-        { r: 0, g: 255, b: 0 },     // Green
-        { r: 255, g: 255, b: 0 },   // Yellow
-        { r: 255, g: 0, b: 255 },   // Magenta
-        { r: 0, g: 255, b: 255 },   // Cyan
-        { r: 0, g: 0, b: 0 },       // Black
-        { r: 255, g: 255, b: 255 }, // White
-        { r: 128, g: 128, b: 128 }, // Gray
-        { r: 165, g: 42, b: 42 },   // Brown
-      ];
-
-      const styles: ClothingAnalysis['style'][] = ['casual', 'formal', 'sporty', 'elegant'];
-      
-      const randomColor = colors[Math.floor(Math.random() * colors.length)];
-      const randomStyle = styles[Math.floor(Math.random() * styles.length)];
-      const brightness = Math.random() * 0.8 + 0.1; // 0.1 to 0.9
-
-      const analysis = {
-        dominantColor: randomColor,
-        brightness,
-        style: randomStyle
-      };
-
-      console.log('✅ Clothing analysis completed:', analysis);
-      return analysis;
-
+      return `data:image/jpeg;base64,${base64}`;
     } catch (error) {
-      console.error('❌ Clothing analysis error:', error);
-      
-      // Return default analysis
-      return {
-        dominantColor: { r: 128, g: 128, b: 128 },
-        brightness: 0.5,
-        style: 'casual'
-      };
+      console.error('❌ Base64 conversion error:', error);
+      throw new Error('Failed to convert image to base64');
     }
   }
 
   /**
-   * Create processed image with clothing effects
+   * Create prediction on Replicate
    */
-  private async createProcessedImage(
-    personImageUri: string,
-    clothingAnalysis: ClothingAnalysis,
+  private async createReplicatePrediction(
+    personImage: string,
+    clothingImage: string,
     category?: string
-  ): Promise<string> {
+  ): Promise<any> {
     try {
-      console.log('🎨 Creating processed image...');
+      console.log('🌐 Creating Replicate prediction...');
       
-      // Simulate AI processing time
-      await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
+      const response = await fetch(this.REPLICATE_API_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Token ${CONFIG.REPLICATE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          version: this.MODEL_VERSION,
+          input: {
+            human_img: personImage,
+            garm_img: clothingImage,
+            garment_des: this.getGarmentDescription(category),
+            is_checked: true,
+            is_checked_crop: false,
+            denoise_steps: 30,
+            seed: Math.floor(Math.random() * 1000000)
+          }
+        })
+      });
 
-      // Apply color tint based on clothing analysis
-      const tintColor = this.calculateTintColor(clothingAnalysis, category);
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Replicate API error: ${response.status} - ${errorData}`);
+      }
+
+      const prediction = await response.json();
+      console.log('✅ Prediction created successfully');
       
-      // Use ImageManipulator to apply effects
-      const processedImage = await ImageManipulator.manipulateAsync(
-        personImageUri,
-        [
-          // Apply resize to ensure consistent processing
-          { resize: { width: 800 } }
-        ],
-        {
-          compress: 0.8,
-          format: ImageManipulator.SaveFormat.JPEG,
-          base64: false
-        }
-      );
-
-      // Apply color overlay effect
-      const finalImage = await this.applyColorTint(
-        processedImage.uri,
-        tintColor,
-        category
-      );
-
-      console.log('✅ Processed image created successfully');
-      return finalImage;
-
+      return prediction;
     } catch (error) {
-      console.error('❌ Image processing error:', error);
-      // Return original image if processing fails
-      return personImageUri;
+      console.error('❌ Replicate prediction error:', error);
+      throw error;
     }
   }
 
   /**
-   * Calculate tint color based on clothing analysis
+   * Poll Replicate for prediction results
    */
-  private calculateTintColor(
-    clothingAnalysis: ClothingAnalysis,
-    category?: string
-  ): { r: number; g: number; b: number; intensity: number } {
-    const { dominantColor, brightness, style } = clothingAnalysis;
+  private async pollForResult(predictionId: string): Promise<string> {
+    const startTime = Date.now();
+    const pollInterval = 2000; // 2 seconds
     
-    // Adjust intensity based on style
-    let intensity = 0.15; // Base intensity
+    console.log('⏳ Polling for results...');
     
-    switch (style) {
-      case 'formal':
-        intensity = 0.08; // Subtle for formal
-        break;
-      case 'sporty':
-        intensity = 0.25; // Vibrant for sporty
-        break;
-      case 'elegant':
-        intensity = 0.12; // Refined for elegant
-        break;
-      default:
-        intensity = 0.15; // Default for casual
-    }
+    while (Date.now() - startTime < this.timeout) {
+      try {
+        const response = await fetch(`${this.REPLICATE_API_URL}/${predictionId}`, {
+          headers: {
+            'Authorization': `Token ${CONFIG.REPLICATE_API_KEY}`,
+          }
+        });
 
-    // Adjust based on brightness
-    if (brightness > 0.7) {
-      intensity *= 0.8; // Reduce intensity for bright colors
-    } else if (brightness < 0.3) {
-      intensity *= 1.2; // Increase intensity for dark colors
-    }
-
-    // Adjust based on category
-    if (category === 'upper_body') {
-      intensity *= 1.1; // Slightly more visible for upper body
-    } else if (category === 'lower_body') {
-      intensity *= 0.9; // Slightly less for lower body
-    }
-
-    return {
-      r: dominantColor.r,
-      g: dominantColor.g,
-      b: dominantColor.b,
-      intensity: Math.min(intensity, 0.3) // Cap at 30%
-    };
-  }
-
-  /**
-   * Apply color tint to image
-   */
-  private async applyColorTint(
-    imageUri: string,
-    tintColor: { r: number; g: number; b: number; intensity: number },
-    category?: string
-  ): Promise<string> {
-    try {
-      console.log('🎯 Applying color tint:', tintColor);
-      
-      // Apply real visual transformations based on clothing color
-      const transformations = [];
-      
-      // Add brightness adjustment based on clothing color
-      const brightness = this.calculateBrightnessAdjustment(tintColor);
-      
-      // Add contrast adjustment
-      const contrast = this.calculateContrastAdjustment(tintColor);
-      
-      // Apply transformations using ImageManipulator
-      const processedImage = await ImageManipulator.manipulateAsync(
-        imageUri,
-        [
-          // Resize for consistent processing
-          { resize: { width: 600 } },
-          
-          // Apply rotation for visual difference (very subtle)
-          { rotate: Math.random() * 2 - 1 }, // -1 to +1 degrees
-          
-          // Flip horizontally sometimes for variety
-          ...(Math.random() > 0.7 ? [{ flip: ImageManipulator.FlipType.Horizontal }] : [])
-        ],
-        {
-          compress: 0.85,
-          format: ImageManipulator.SaveFormat.JPEG,
-          base64: false
+        if (!response.ok) {
+          throw new Error(`Polling error: ${response.status}`);
         }
-      );
 
-      // Apply color-specific effects
-      const finalImage = await this.applyColorSpecificEffects(
-        processedImage.uri,
-        tintColor,
-        category
-      );
+        const prediction = await response.json();
+        console.log('📊 Prediction status:', prediction.status);
 
-      console.log('✅ Color tint applied successfully');
-      return finalImage;
+        if (prediction.status === 'succeeded') {
+          if (prediction.output && prediction.output.length > 0) {
+            const resultUrl = prediction.output[0];
+            console.log('✅ Result received:', resultUrl);
+            
+            // Download and save the result
+            const localPath = await this.downloadResult(resultUrl);
+            return localPath;
+          } else {
+            throw new Error('No output received from prediction');
+          }
+        } else if (prediction.status === 'failed') {
+          throw new Error(`Prediction failed: ${prediction.error || 'Unknown error'}`);
+        } else if (prediction.status === 'canceled') {
+          throw new Error('Prediction was canceled');
+        }
 
-    } catch (error) {
-      console.error('❌ Color tint error:', error);
-      return imageUri;
+        // Still processing, wait and try again
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+        
+      } catch (error) {
+        console.error('❌ Polling error:', error);
+        throw error;
+      }
     }
+
+    throw new Error('Prediction timed out');
   }
 
   /**
-   * Apply color-specific visual effects
+   * Download result from URL and save locally
    */
-  private async applyColorSpecificEffects(
-    imageUri: string,
-    tintColor: { r: number; g: number; b: number; intensity: number },
-    category?: string
-  ): Promise<string> {
+  private async downloadResult(resultUrl: string): Promise<string> {
     try {
-      console.log('🎨 Applying color-specific effects...');
+      console.log('⬇️ Downloading result...');
       
-      // Create unique filename with color info
       const timestamp = Date.now();
-      const colorCode = `${tintColor.r}_${tintColor.g}_${tintColor.b}`;
-      const outputPath = `${FileSystem.documentDirectory}tryOn_${colorCode}_${timestamp}.jpg`;
+      const filename = `virtual_tryOn_result_${timestamp}.jpg`;
+      const localPath = `${FileSystem.documentDirectory}${filename}`;
+
+      const downloadResult = await FileSystem.downloadAsync(resultUrl, localPath);
       
-      // Determine effect based on dominant color
-      let effectTransformations = [];
+      console.log('✅ Result downloaded to:', downloadResult.uri);
+      return downloadResult.uri;
       
-      // Red clothing - warmer tone
-      if (tintColor.r > 200 && tintColor.g < 100 && tintColor.b < 100) {
-        effectTransformations = [
-          { resize: { width: 580 } }, // Slightly smaller for red
-        ];
-      }
-      // Blue clothing - cooler tone  
-      else if (tintColor.b > 200 && tintColor.r < 100 && tintColor.g < 100) {
-        effectTransformations = [
-          { resize: { width: 620 } }, // Slightly larger for blue
-        ];
-      }
-      // Green clothing - natural tone
-      else if (tintColor.g > 200 && tintColor.r < 100 && tintColor.b < 100) {
-        effectTransformations = [
-          { resize: { width: 590 } },
-          { rotate: 0.5 } // Slight rotation for green
-        ];
-      }
-      // Yellow clothing - bright effect
-      else if (tintColor.r > 200 && tintColor.g > 200 && tintColor.b < 100) {
-        effectTransformations = [
-          { resize: { width: 610 } },
-        ];
-      }
-      // Dark colors (black, gray) - high contrast
-      else if (tintColor.r < 50 && tintColor.g < 50 && tintColor.b < 50) {
-        effectTransformations = [
-          { resize: { width: 595 } },
-          { rotate: -0.3 }
-        ];
-      }
-      // Light colors (white, light gray) - soft effect
-      else if (tintColor.r > 200 && tintColor.g > 200 && tintColor.b > 200) {
-        effectTransformations = [
-          { resize: { width: 605 } },
-        ];
-      }
-      // Default for other colors
-      else {
-        effectTransformations = [
-          { resize: { width: 600 } },
-        ];
-      }
-
-      // Apply the color-specific transformations
-      const colorEffectedImage = await ImageManipulator.manipulateAsync(
-        imageUri,
-        effectTransformations,
-        {
-          compress: 0.8,
-          format: ImageManipulator.SaveFormat.JPEG,
-          base64: false
-        }
-      );
-
-      // Copy to final destination with unique name
-      await FileSystem.copyAsync({
-        from: colorEffectedImage.uri,
-        to: outputPath
-      });
-
-      console.log('✅ Color-specific effects applied:', {
-        color: `RGB(${tintColor.r}, ${tintColor.g}, ${tintColor.b})`,
-        outputPath
-      });
-
-      return outputPath;
-
     } catch (error) {
-      console.error('❌ Color-specific effects error:', error);
-      return imageUri;
+      console.error('❌ Download error:', error);
+      throw new Error('Failed to download result');
     }
   }
 
   /**
-   * Calculate brightness adjustment based on clothing color
+   * Get garment description for better results
    */
-  private calculateBrightnessAdjustment(tintColor: { r: number; g: number; b: number }): number {
-    // Calculate perceived brightness of the color
-    const perceivedBrightness = (0.299 * tintColor.r + 0.587 * tintColor.g + 0.114 * tintColor.b) / 255;
+  private getGarmentDescription(category?: string): string {
+    const descriptions = {
+      'upper_body': 'A stylish upper body garment like shirt, blouse, or top',
+      'lower_body': 'A fashionable lower body garment like pants, skirt, or shorts',
+      'dresses': 'An elegant dress or gown',
+      'full_body': 'A complete outfit or full-body garment'
+    };
     
-    // Adjust image brightness inversely to clothing brightness
-    if (perceivedBrightness > 0.7) {
-      return -0.1; // Darken image for bright clothing
-    } else if (perceivedBrightness < 0.3) {
-      return 0.1; // Brighten image for dark clothing
-    }
-    
-    return 0; // No adjustment for medium brightness
-  }
-
-  /**
-   * Calculate contrast adjustment based on clothing color
-   */
-  private calculateContrastAdjustment(tintColor: { r: number; g: number; b: number }): number {
-    // Calculate color saturation
-    const max = Math.max(tintColor.r, tintColor.g, tintColor.b);
-    const min = Math.min(tintColor.r, tintColor.g, tintColor.b);
-    const saturation = max === 0 ? 0 : (max - min) / max;
-    
-    // Higher contrast for more saturated colors
-    if (saturation > 0.7) {
-      return 0.15; // Increase contrast for vibrant colors
-    } else if (saturation < 0.3) {
-      return -0.05; // Decrease contrast for muted colors
-    }
-    
-    return 0.05; // Default slight contrast increase
+    return descriptions[category || 'upper_body'] || descriptions.upper_body;
   }
 
   /**
@@ -439,8 +263,8 @@ class VirtualTryOnService {
         });
         results.push(result);
         
-        // Small delay between requests
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Add delay between requests to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 5000));
       } catch (error) {
         results.push({
           resultImage: personImage,
@@ -458,16 +282,28 @@ class VirtualTryOnService {
    */
   async healthCheck(): Promise<{ available: boolean; status: string }> {
     try {
-      const canProcess = FileSystem.documentDirectory !== null;
-      
+      if (!CONFIG.REPLICATE_API_KEY) {
+        return {
+          available: false,
+          status: 'Replicate API key not configured'
+        };
+      }
+
+      // Test API connectivity
+      const response = await fetch('https://api.replicate.com/v1/models', {
+        headers: {
+          'Authorization': `Token ${CONFIG.REPLICATE_API_KEY}`,
+        }
+      });
+
       return {
-        available: canProcess,
-        status: canProcess ? 'Ready' : 'Unavailable'
+        available: response.ok,
+        status: response.ok ? 'Ready - Replicate API Connected' : 'API Connection Failed'
       };
     } catch (error) {
       return {
         available: false,
-        status: 'Error'
+        status: 'Connection Error'
       };
     }
   }
@@ -482,8 +318,7 @@ class VirtualTryOnService {
       
       const files = await FileSystem.readDirectoryAsync(documentDir);
       const tempFiles = files.filter(file => 
-        file.startsWith('virtual_tryOn_') || 
-        file.startsWith('processed_')
+        file.startsWith('virtual_tryOn_result_')
       );
       
       for (const file of tempFiles) {
@@ -493,6 +328,25 @@ class VirtualTryOnService {
       console.log(`🧹 Cleaned up ${tempFiles.length} temporary files`);
     } catch (error) {
       console.warn('Cleanup error:', error);
+    }
+  }
+
+  /**
+   * Cancel ongoing prediction
+   */
+  async cancelPrediction(predictionId: string): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.REPLICATE_API_URL}/${predictionId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Token ${CONFIG.REPLICATE_API_KEY}`,
+        }
+      });
+
+      return response.ok;
+    } catch (error) {
+      console.error('Cancel prediction error:', error);
+      return false;
     }
   }
 }
