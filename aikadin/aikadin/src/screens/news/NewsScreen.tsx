@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.grey[200],
+    borderBottomColor: theme.colors.neutral[200],
   },
   headerTitle: {
     fontSize: theme.fontSizes.lg,
@@ -202,14 +202,14 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.grey[200],
+    borderBottomColor: theme.colors.neutral[200],
   },
   categoryButton: {
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
     marginRight: theme.spacing.sm,
     borderRadius: 50,
-    backgroundColor: theme.colors.grey[100],
+    backgroundColor: theme.colors.neutral[100],
   },
   categoryButtonActive: {
     backgroundColor: theme.colors.primary.main,
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   newsImage: {
     width: '100%',
     height: 180,
-    backgroundColor: theme.colors.grey[200],
+    backgroundColor: theme.colors.neutral[200],
   },
   newsContent: {
     padding: theme.spacing.md,
@@ -275,6 +275,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: theme.colors.primary.main,
     marginRight: theme.spacing.xs,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.neutral[200],
+  },
+  sectionTitle: {
+    fontSize: theme.fontSizes.lg,
+    fontWeight: 'bold',
+    color: theme.colors.text.primary,
+  },
+  filterContainer: {
+    backgroundColor: theme.colors.neutral[100],
   },
 });
 

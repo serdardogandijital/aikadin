@@ -242,7 +242,7 @@ const WardrobeScreen = () => {
       'Ayakkabı': '#FF6B6B',
       'Aksesuar': '#4ECDC4',
     };
-    return colors[category] || theme.colors.grey[400];
+    return colors[category] || theme.colors.neutral[400];
   };
 
   const getColorValue = (colorName: string) => {
@@ -258,12 +258,12 @@ const WardrobeScreen = () => {
       'Pembe': '#E91E63',
       'Gri': '#9E9E9E',
     };
-    return colors[colorName] || theme.colors.grey[400];
+    return colors[colorName] || theme.colors.neutral[400];
   };
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
-      <MaterialIcons name="checkroom" size={80} color={theme.colors.grey[400]} />
+      <MaterialIcons name="checkroom" size={80} color={theme.colors.neutral[400]} />
       <Text style={styles.emptyStateTitle}>Dolabınız Boş</Text>
       <Text style={styles.emptyStateText}>
         İlk kıyafetinizi ekleyerek dolabınızı oluşturmaya başlayın
@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
     padding: theme.spacing.md,
     backgroundColor: theme.colors.background.paper,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.grey[200],
+    borderBottomColor: theme.colors.neutral[200],
   },
   headerTitle: {
     fontSize: theme.fontSizes.xl,
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.round,
     backgroundColor: theme.colors.background.paper,
     borderWidth: 1,
-    borderColor: theme.colors.grey[300],
+    borderColor: theme.colors.neutral[300],
     marginRight: theme.spacing.sm,
   },
   categoryButtonActive: {
@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     marginRight: theme.spacing.xs,
     borderWidth: 1,
-    borderColor: theme.colors.grey[300],
+    borderColor: theme.colors.neutral[300],
   },
   colorText: {
     fontSize: theme.fontSizes.xs,

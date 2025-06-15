@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.grey[200],
+    borderBottomColor: theme.colors.neutral[200],
     backgroundColor: theme.colors.background.paper,
   },
   headerTitle: {
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary.main,
   },
   aiMessage: {
-    backgroundColor: theme.colors.grey[100],
+    backgroundColor: theme.colors.neutral[100],
   },
   messageText: {
     fontSize: theme.fontSizes.md,
@@ -400,13 +400,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     padding: theme.spacing.md,
     borderTopWidth: 1,
-    borderTopColor: theme.colors.grey[200],
+    borderTopColor: theme.colors.neutral[200],
     backgroundColor: theme.colors.background.paper,
   },
   textInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: theme.colors.grey[300],
+    borderColor: theme.colors.neutral[300],
     borderRadius: theme.borderRadius.lg,
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.md,
@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sendButtonDisabled: {
-    backgroundColor: theme.colors.grey[300],
+    backgroundColor: theme.colors.neutral[300],
   },
 });
 

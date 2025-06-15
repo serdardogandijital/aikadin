@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.grey[200],
+    borderBottomColor: theme.colors.neutral[200],
   },
   headerTitle: {
     fontSize: theme.fontSizes.lg,
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.grey[200],
+    borderBottomColor: theme.colors.neutral[200],
   },
   tab: {
     flex: 1,
@@ -379,13 +379,13 @@ const styles = StyleSheet.create({
   postImage: {
     width: '100%',
     height: 300,
-    backgroundColor: theme.colors.grey[200],
+    backgroundColor: theme.colors.neutral[200],
   },
   postActions: {
     flexDirection: 'row',
     padding: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.grey[200],
+    borderBottomColor: theme.colors.neutral[200],
   },
   postAction: {
     flexDirection: 'row',

@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.grey[200],
+    borderBottomColor: theme.colors.neutral[200],
   },
   backButton: {
     padding: theme.spacing.xs,

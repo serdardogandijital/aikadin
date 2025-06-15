@@ -269,7 +269,7 @@ const AnalyticsScreen: React.FC = () => {
             ) : (
               searchImage && (
                 <View style={styles.noResultsContainer}>
-                  <MaterialIcons name="search-off" size={60} color={theme.colors.grey[400]} />
+                  <MaterialIcons name="search-off" size={60} color={theme.colors.neutral[400]} />
                   <Text style={styles.noResultsText}>Sonuç Bulunamadı</Text>
                   <Text style={styles.noResultsSubtext}>Farklı bir görsel ile tekrar deneyin.</Text>
                 </View>
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.grey[200],
+    borderBottomColor: theme.colors.neutral[200],
   },
   headerTitle: {
     fontSize: theme.fontSizes.lg,
@@ -364,13 +364,13 @@ const styles = StyleSheet.create({
     height: 300,
     borderRadius: theme.borderRadius.md,
     marginBottom: theme.spacing.md,
-    backgroundColor: theme.colors.grey[200],
+    backgroundColor: theme.colors.neutral[200],
   },
   clearButton: {
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
     borderRadius: theme.borderRadius.md,
-    backgroundColor: theme.colors.grey[200],
+    backgroundColor: theme.colors.neutral[200],
   },
   clearButtonText: {
     fontSize: theme.fontSizes.md,
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
   resultImage: {
     width: 100,
     height: 150,
-    backgroundColor: theme.colors.grey[200],
+    backgroundColor: theme.colors.neutral[200],
   },
   resultInfo: {
     flex: 1,
@@ -436,7 +436,7 @@ const styles = StyleSheet.create({
   similarityBar: {
     flex: 1,
     height: 8,
-    backgroundColor: theme.colors.grey[200],
+    backgroundColor: theme.colors.neutral[200],
     borderRadius: 4,
     marginHorizontal: theme.spacing.sm,
   },

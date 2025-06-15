@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.grey[200],
+    borderBottomColor: theme.colors.neutral[200],
   },
   headerTitle: {
     fontSize: theme.fontSizes.lg,
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 8,
-    backgroundColor: theme.colors.grey[200],
+    backgroundColor: theme.colors.neutral[200],
     borderRadius: 4,
     marginBottom: theme.spacing.sm,
   },
@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
     marginRight: theme.spacing.sm,
     marginBottom: theme.spacing.sm,
     borderWidth: 1,
-    borderColor: theme.colors.grey[200],
+    borderColor: theme.colors.neutral[200],
   },
   colorDescription: {
     fontSize: theme.fontSizes.md,
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
   recommendationImage: {
     width: '100%',
     height: 180,
-    backgroundColor: theme.colors.grey[200],
+    backgroundColor: theme.colors.neutral[200],
   },
   recommendationContent: {
     padding: theme.spacing.md,

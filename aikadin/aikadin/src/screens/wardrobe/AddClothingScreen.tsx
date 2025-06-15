@@ -206,7 +206,7 @@ const AddClothingScreen: React.FC<Props> = ({ navigation }) => {
             />
           ) : (
             <>
-              <Ionicons name="camera-outline" size={40} color={theme.colors.grey[400]} />
+              <Ionicons name="camera-outline" size={40} color={theme.colors.neutral[400]} />
               <Text style={styles.imagePickerText}>Select Photo</Text>
             </>
           )}
@@ -220,7 +220,7 @@ const AddClothingScreen: React.FC<Props> = ({ navigation }) => {
               value={name}
               onChangeText={setName}
               placeholder="Enter item name"
-              placeholderTextColor={theme.colors.grey[400]}
+              placeholderTextColor={theme.colors.neutral[400]}
             />
           </View>
           
@@ -231,7 +231,7 @@ const AddClothingScreen: React.FC<Props> = ({ navigation }) => {
               value={brand}
               onChangeText={setBrand}
               placeholder="Enter brand name (optional)"
-              placeholderTextColor={theme.colors.grey[400]}
+              placeholderTextColor={theme.colors.neutral[400]}
             />
           </View>
           
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.grey[200],
+    borderBottomColor: theme.colors.neutral[200],
     backgroundColor: theme.colors.background.paper,
   },
   backButton: {
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: theme.spacing.lg,
     borderWidth: 1,
-    borderColor: theme.colors.grey[200],
+    borderColor: theme.colors.neutral[200],
     borderStyle: 'dashed',
     overflow: 'hidden',
   },
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
   imagePickerText: {
     marginTop: theme.spacing.sm,
     fontSize: theme.fontSizes.md,
-    color: theme.colors.grey[500],
+    color: theme.colors.neutral[500],
   },
   formContainer: {
     marginBottom: theme.spacing.lg,
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
   textInput: {
     backgroundColor: theme.colors.background.paper,
     borderWidth: 1,
-    borderColor: theme.colors.grey[200],
+    borderColor: theme.colors.neutral[200],
     borderRadius: theme.borderRadius.md,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
   pickerContainer: {
     backgroundColor: theme.colors.background.paper,
     borderWidth: 1,
-    borderColor: theme.colors.grey[200],
+    borderColor: theme.colors.neutral[200],
     borderRadius: theme.borderRadius.md,
     overflow: 'hidden',
     padding: theme.spacing.xs,
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.sm,
     backgroundColor: theme.colors.background.card,
     borderWidth: 1,
-    borderColor: theme.colors.grey[200],
+    borderColor: theme.colors.neutral[200],
   },
   pickerItemSelected: {
     backgroundColor: theme.colors.primary.main,
@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
   footer: {
     padding: theme.spacing.md,
     borderTopWidth: 1,
-    borderTopColor: theme.colors.grey[200],
+    borderTopColor: theme.colors.neutral[200],
     backgroundColor: theme.colors.background.paper,
   },
   saveButton: {

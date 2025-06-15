@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 4,
-    backgroundColor: theme.colors.grey[200],
+    backgroundColor: theme.colors.neutral[200],
     borderRadius: 2,
     marginBottom: theme.spacing.sm,
   },
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   },
   textInput: {
     borderWidth: 1,
-    borderColor: theme.colors.grey[300],
+    borderColor: theme.colors.neutral[300],
     borderRadius: theme.borderRadius.md,
     padding: theme.spacing.md,
     fontSize: theme.fontSizes.md,
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     padding: theme.spacing.md,
     borderRadius: theme.borderRadius.md,
     borderWidth: 1,
-    borderColor: theme.colors.grey[300],
+    borderColor: theme.colors.neutral[300],
     backgroundColor: theme.colors.background.paper,
   },
   selectedOption: {
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
   secondaryButton: {
     backgroundColor: theme.colors.background.paper,
     borderWidth: 1,
-    borderColor: theme.colors.grey[300],
+    borderColor: theme.colors.neutral[300],
   },
   buttonText: {
     fontSize: theme.fontSizes.md,

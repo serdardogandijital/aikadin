@@ -13,9 +13,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import theme from '../../theme';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import apiService from '../../services/apiService';
-// import { auth, db } from '../../services/firebase';
-// import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import virtualTryOnService from '../../services/virtualTryOnService';
 
 interface ImageData {
   uri: string;
@@ -25,9 +23,11 @@ interface ImageData {
 const VirtualTryOnScreen = () => {
   const [userImage, setUserImage] = useState<string | null>(null);
   const [clothingImage, setClothingImage] = useState<string | null>(null);
-  const [resultAnalysis, setResultAnalysis] = useState<string | null>(null);
+  const [resultImage, setResultImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [processingStep, setProcessingStep] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<'upper_body' | 'lower_body' | 'dresses' | 'full_body'>('upper_body');
 
   const requestPermissions = async () => {
     const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
@@ -110,50 +110,114 @@ const VirtualTryOnScreen = () => {
 
     setIsProcessing(true);
     setProgress(0);
-    setResultAnalysis(null);
+    setResultImage(null);
+    setProcessingStep('AI modeli başlatılıyor...');
 
     try {
       // Simulate progress updates
-      const progressInterval = setInterval(() => {
-        setProgress(prev => {
-          const newProgress = prev + 12;
-          if (newProgress >= 90) {
-            clearInterval(progressInterval);
-          }
-          return Math.min(newProgress, 90);
-        });
-      }, 600);
+      const progressSteps = [
+        { progress: 15, step: 'Ücretsiz Gradio API bağlantısı kuruluyor...' },
+        { progress: 30, step: 'IDM-VTON modeli hazırlanıyor...' },
+        { progress: 50, step: 'Kıyafet ve vücut eşleştiriliyor...' },
+        { progress: 70, step: 'Sanal giyim işlemi yapılıyor...' },
+        { progress: 85, step: 'Görsel iyileştirmeleri uygulanıyor...' },
+        { progress: 95, step: 'Son dokunuşlar ekleniyor...' }
+      ];
 
-      const result = await apiService.callVirtualTryOn({
-        userImage,
-        clothingImage
+      const progressInterval = setInterval(() => {
+        const currentStep = progressSteps.find(step => step.progress > progress);
+        if (currentStep && progress < 95) {
+          setProgress(currentStep.progress);
+          setProcessingStep(currentStep.step);
+        }
+      }, 2000);
+
+      const result = await virtualTryOnService.processVirtualTryOn({
+        personImage: userImage,
+        clothingImage: clothingImage,
+        category: selectedCategory
       });
 
       clearInterval(progressInterval);
       setProgress(100);
-      setResultAnalysis(result);
+      setProcessingStep('Tamamlandı!');
 
-      // Save to history (Firebase disabled)
-      // await saveToHistory(result);
+      if (result.success && result.resultImage) {
+        setResultImage(result.resultImage);
+        Alert.alert(
+          'Başarılı!', 
+          `Sanal deneme tamamlandı! ${result.processingTime ? `(${Math.round(result.processingTime / 1000)}s)` : ''}`
+        );
+      } else {
+        throw new Error(result.error || 'Bilinmeyen hata');
+      }
 
     } catch (error) {
       console.error('Virtual try-on error:', error);
       Alert.alert(
         'İşlem Hatası',
-        'AI analizi gerçekleştirilemedi. Lütfen tekrar deneyin.'
+        'Sanal deneme işlemi gerçekleştirilemedi. Lütfen tekrar deneyin.'
       );
     } finally {
       setIsProcessing(false);
       setProgress(0);
+      setProcessingStep('');
+    }
+  };
+
+  const saveResult = async () => {
+    if (!resultImage) return;
+
+    try {
+      const savedUri = await virtualTryOnService.saveResultToDevice(resultImage);
+      Alert.alert('Başarılı', 'Görsel galerinize kaydedildi!');
+    } catch (error) {
+      Alert.alert('Hata', 'Görsel kaydedilemedi.');
     }
   };
 
   const resetAll = () => {
     setUserImage(null);
     setClothingImage(null);
-    setResultAnalysis(null);
+    setResultImage(null);
     setProgress(0);
+    setProcessingStep('');
   };
+
+  const renderCategorySelector = () => (
+    <View style={styles.categoryContainer}>
+      <Text style={styles.categoryTitle}>Kıyafet Kategorisi:</Text>
+      <View style={styles.categoryButtons}>
+        {[
+          { key: 'upper_body', label: 'Üst Giyim', icon: 'checkroom' },
+          { key: 'lower_body', label: 'Alt Giyim', icon: 'dry-cleaning' },
+          { key: 'dresses', label: 'Elbise', icon: 'woman' },
+          { key: 'full_body', label: 'Komple', icon: 'person' }
+        ].map((category) => (
+          <TouchableOpacity
+            key={category.key}
+            style={[
+              styles.categoryButton,
+              selectedCategory === category.key && styles.categoryButtonActive
+            ]}
+            onPress={() => setSelectedCategory(category.key as any)}
+          >
+            <MaterialIcons 
+              name={category.icon as any} 
+              size={20} 
+              color={selectedCategory === category.key ? theme.colors.primary.contrastText : theme.colors.text.primary} 
+            />
+            <Text style={[
+              styles.categoryButtonText,
+              selectedCategory === category.key && styles.categoryButtonTextActive
+            ]}>
+              {category.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
 
   const renderImagePicker = (
     title: string,
@@ -178,14 +242,31 @@ const VirtualTryOnScreen = () => {
 
   const renderProgressBar = () => (
     <View style={styles.progressContainer}>
-      <Text style={styles.progressText}>AI analiz yapıyor... %{progress}</Text>
+      <Text style={styles.progressText}>🤖 Ücretsiz IDM-VTON AI işlem yapıyor... %{progress}</Text>
       <View style={styles.progressBar}>
         <View style={[styles.progressFill, { width: `${progress}%` }]} />
       </View>
-      <Text style={styles.progressStepText}>
-        {progress < 30 ? 'Fotoğraflar analiz ediliyor...' :
-         progress < 60 ? 'Stil uyumu değerlendiriliyor...' :
-         progress < 90 ? 'Kombin önerileri hazırlanıyor...' : 'Tamamlandı!'}
+      <Text style={styles.progressStepText}>{processingStep}</Text>
+      <Text style={styles.progressNote}>
+        💡 Hugging Face Spaces üzerinden ücretsiz AI teknolojisi kullanılıyor
+      </Text>
+    </View>
+  );
+
+  const renderResult = () => (
+    <View style={styles.resultContainer}>
+      <Text style={styles.resultTitle}>🎉 Sanal Deneme Sonucu</Text>
+      <View style={styles.resultImageContainer}>
+        <Image source={{ uri: resultImage }} style={styles.resultImage} />
+        <View style={styles.resultOverlay}>
+          <TouchableOpacity style={styles.saveButton} onPress={saveResult}>
+            <MaterialIcons name="save-alt" size={20} color={theme.colors.primary.contrastText} />
+            <Text style={styles.saveButtonText}>Kaydet</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+      <Text style={styles.resultDescription}>
+        Ücretsiz IDM-VTON AI teknolojisi ile oluşturulan gerçekçi sanal deneme sonucu
       </Text>
     </View>
   );
@@ -194,12 +275,17 @@ const VirtualTryOnScreen = () => {
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <MaterialIcons name="psychology" size={32} color={theme.colors.primary.main} />
-          <Text style={styles.title}>AI Stil Analizi</Text>
+          <MaterialIcons name="auto-fix-high" size={32} color={theme.colors.primary.main} />
+          <Text style={styles.title}>AI Sanal Deneme Kabini</Text>
           <Text style={styles.subtitle}>
-            Kıyafetlerin size nasıl uyacağını AI ile keşfedin
+            Ücretsiz IDM-VTON teknolojisi ile kıyafetlerin üzerinizde nasıl duracağını görün
           </Text>
+          <View style={styles.techBadge}>
+            <Text style={styles.techBadgeText}>🆓 Ücretsiz IDM-VTON</Text>
+          </View>
         </View>
+
+        {renderCategorySelector()}
 
         <View style={styles.imageSection}>
           {renderImagePicker(
@@ -219,14 +305,7 @@ const VirtualTryOnScreen = () => {
 
         {isProcessing && renderProgressBar()}
 
-        {resultAnalysis && (
-          <View style={styles.resultContainer}>
-            <Text style={styles.resultTitle}>AI Analiz Sonucu</Text>
-            <View style={styles.resultCard}>
-              <Text style={styles.resultText}>{resultAnalysis}</Text>
-            </View>
-          </View>
-        )}
+        {resultImage && !isProcessing && renderResult()}
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity
@@ -247,12 +326,12 @@ const VirtualTryOnScreen = () => {
                   size={20}
                   color={theme.colors.primary.contrastText}
                 />
-                <Text style={styles.buttonText}>AI Analiz Başlat</Text>
+                <Text style={styles.buttonText}>AI Sanal Deneme Başlat</Text>
               </>
             )}
           </TouchableOpacity>
 
-          {(userImage || clothingImage || resultAnalysis) && (
+          {(userImage || clothingImage || resultImage) && (
             <TouchableOpacity
               style={[styles.button, styles.secondaryButton]}
               onPress={resetAll}
@@ -267,12 +346,15 @@ const VirtualTryOnScreen = () => {
         </View>
 
         <View style={styles.infoSection}>
-          <Text style={styles.infoTitle}>İpuçları:</Text>
+          <Text style={styles.infoTitle}>💡 En İyi Sonuç İçin İpuçları:</Text>
           <Text style={styles.infoText}>
             • Net ve aydınlık fotoğraflar kullanın{'\n'}
             • Düz pozda çekilmiş fotoğraflar daha iyi sonuç verir{'\n'}
             • Kıyafet fotoğrafının temiz arka plana sahip olması idealdir{'\n'}
-            • AI detaylı stil analizi ve kombin önerileri sunar
+            • Doğru kategori seçimi sonucu iyileştirir{'\n'}
+            • Ücretsiz Hugging Face Spaces API kullanılıyor{'\n'}
+            • İşlem 30-60 saniye sürebilir, lütfen bekleyin{'\n'}
+            • Yoğun saatlerde biraz daha uzun sürebilir
           </Text>
         </View>
       </ScrollView>
@@ -306,6 +388,44 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
+  categoryContainer: {
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.background.paper,
+    marginBottom: theme.spacing.md,
+  },
+  categoryTitle: {
+    fontSize: theme.fontSizes.lg,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.md,
+  },
+  categoryButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing.sm,
+  },
+  categoryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.neutral[300],
+    backgroundColor: theme.colors.background.paper,
+  },
+  categoryButtonActive: {
+    backgroundColor: theme.colors.primary.main,
+    borderColor: theme.colors.primary.main,
+  },
+  categoryButtonText: {
+    fontSize: theme.fontSizes.sm,
+    color: theme.colors.text.primary,
+    marginLeft: theme.spacing.xs,
+  },
+  categoryButtonTextActive: {
+    color: theme.colors.primary.contrastText,
+  },
   imageSection: {
     padding: theme.spacing.md,
     gap: theme.spacing.lg,
@@ -324,7 +444,7 @@ const styles = StyleSheet.create({
     height: 250,
     borderRadius: theme.borderRadius.lg,
     borderWidth: 2,
-    borderColor: theme.colors.grey[300],
+    borderColor: theme.colors.neutral[300],
     borderStyle: 'dashed',
     overflow: 'hidden',
   },
@@ -337,7 +457,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: theme.colors.grey[50],
+    backgroundColor: theme.colors.neutral[50],
   },
   emptyImageText: {
     fontSize: theme.fontSizes.md,
@@ -347,6 +467,9 @@ const styles = StyleSheet.create({
   progressContainer: {
     padding: theme.spacing.xl,
     alignItems: 'center',
+    backgroundColor: theme.colors.background.paper,
+    margin: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
   },
   progressText: {
     fontSize: theme.fontSizes.lg,
@@ -357,7 +480,7 @@ const styles = StyleSheet.create({
   progressBar: {
     width: '100%',
     height: 8,
-    backgroundColor: theme.colors.grey[200],
+    backgroundColor: theme.colors.neutral[200],
     borderRadius: 4,
     marginBottom: theme.spacing.md,
   },
@@ -369,9 +492,11 @@ const styles = StyleSheet.create({
   progressStepText: {
     fontSize: theme.fontSizes.md,
     color: theme.colors.text.secondary,
+    textAlign: 'center',
   },
   resultContainer: {
-    padding: theme.spacing.xl,
+    padding: theme.spacing.md,
+    alignItems: 'center',
   },
   resultTitle: {
     fontSize: theme.fontSizes.xl,
@@ -380,16 +505,41 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.lg,
     textAlign: 'center',
   },
-  resultCard: {
-    padding: theme.spacing.md,
-    borderWidth: 1,
-    borderColor: theme.colors.grey[300],
-    borderRadius: theme.borderRadius.md,
-    backgroundColor: theme.colors.background.paper,
+  resultImageContainer: {
+    position: 'relative',
+    borderRadius: theme.borderRadius.lg,
+    overflow: 'hidden',
+    marginBottom: theme.spacing.md,
   },
-  resultText: {
+  resultImage: {
+    width: 280,
+    height: 380,
+    resizeMode: 'cover',
+  },
+  resultOverlay: {
+    position: 'absolute',
+    bottom: theme.spacing.md,
+    right: theme.spacing.md,
+  },
+  saveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.success.main,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.borderRadius.md,
+  },
+  saveButtonText: {
+    color: theme.colors.primary.contrastText,
+    fontSize: theme.fontSizes.sm,
+    fontWeight: '600',
+    marginLeft: theme.spacing.xs,
+  },
+  resultDescription: {
     fontSize: theme.fontSizes.md,
-    color: theme.colors.text.primary,
+    color: theme.colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   buttonContainer: {
     padding: theme.spacing.md,
@@ -400,6 +550,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
     borderRadius: theme.borderRadius.md,
     gap: theme.spacing.sm,
   },
@@ -409,10 +560,10 @@ const styles = StyleSheet.create({
   secondaryButton: {
     backgroundColor: theme.colors.background.paper,
     borderWidth: 1,
-    borderColor: theme.colors.grey[300],
+    borderColor: theme.colors.neutral[300],
   },
   disabledButton: {
-    backgroundColor: theme.colors.grey[300],
+    backgroundColor: theme.colors.neutral[300],
   },
   buttonText: {
     fontSize: theme.fontSizes.md,
@@ -423,8 +574,10 @@ const styles = StyleSheet.create({
     color: theme.colors.text.primary,
   },
   infoSection: {
-    padding: theme.spacing.xl,
+    padding: theme.spacing.md,
     backgroundColor: theme.colors.background.paper,
+    margin: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
   },
   infoTitle: {
     fontSize: theme.fontSizes.lg,
@@ -436,6 +589,23 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSizes.md,
     color: theme.colors.text.secondary,
     lineHeight: 22,
+  },
+  techBadge: {
+    backgroundColor: theme.colors.primary.main,
+    padding: theme.spacing.sm,
+    borderRadius: theme.borderRadius.md,
+    marginTop: theme.spacing.md,
+  },
+  techBadgeText: {
+    fontSize: theme.fontSizes.sm,
+    fontWeight: '600',
+    color: theme.colors.primary.contrastText,
+  },
+  progressNote: {
+    fontSize: theme.fontSizes.md,
+    color: theme.colors.text.hint,
+    textAlign: 'center',
+    marginTop: theme.spacing.sm,
   },
 });
 
