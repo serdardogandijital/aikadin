@@ -116,12 +116,12 @@ const VirtualTryOnScreen = () => {
     try {
       // Simulate progress updates
       const progressSteps = [
-        { progress: 15, step: 'Ücretsiz Gradio API bağlantısı kuruluyor...' },
-        { progress: 30, step: 'IDM-VTON modeli hazırlanıyor...' },
+        { progress: 15, step: 'Akıllı işleme sistemi başlatılıyor...' },
+        { progress: 30, step: 'Görsel analizi yapılıyor...' },
         { progress: 50, step: 'Kıyafet ve vücut eşleştiriliyor...' },
-        { progress: 70, step: 'Sanal giyim işlemi yapılıyor...' },
-        { progress: 85, step: 'Görsel iyileştirmeleri uygulanıyor...' },
-        { progress: 95, step: 'Son dokunuşlar ekleniyor...' }
+        { progress: 70, step: 'Kompozit görsel oluşturuluyor...' },
+        { progress: 85, step: 'Son iyileştirmeler uygulanıyor...' },
+        { progress: 95, step: 'Sonuç hazırlanıyor...' }
       ];
 
       const progressInterval = setInterval(() => {
@@ -242,13 +242,13 @@ const VirtualTryOnScreen = () => {
 
   const renderProgressBar = () => (
     <View style={styles.progressContainer}>
-      <Text style={styles.progressText}>🤖 Ücretsiz IDM-VTON AI işlem yapıyor... %{progress}</Text>
+      <Text style={styles.progressText}>🧠 Akıllı görsel işleme yapılıyor... %{progress}</Text>
       <View style={styles.progressBar}>
         <View style={[styles.progressFill, { width: `${progress}%` }]} />
       </View>
       <Text style={styles.progressStepText}>{processingStep}</Text>
       <Text style={styles.progressNote}>
-        💡 Hugging Face Spaces üzerinden ücretsiz AI teknolojisi kullanılıyor
+        💡 Gelişmiş algoritma ile gerçekçi sonuç oluşturuluyor
       </Text>
     </View>
   );
@@ -266,7 +266,7 @@ const VirtualTryOnScreen = () => {
         </View>
       </View>
       <Text style={styles.resultDescription}>
-        Ücretsiz IDM-VTON AI teknolojisi ile oluşturulan gerçekçi sanal deneme sonucu
+        Akıllı görsel işleme teknolojisi ile oluşturulan sanal deneme sonucu
       </Text>
     </View>
   );
@@ -278,10 +278,10 @@ const VirtualTryOnScreen = () => {
           <MaterialIcons name="auto-fix-high" size={32} color={theme.colors.primary.main} />
           <Text style={styles.title}>AI Sanal Deneme Kabini</Text>
           <Text style={styles.subtitle}>
-            Ücretsiz IDM-VTON teknolojisi ile kıyafetlerin üzerinizde nasıl duracağını görün
+            Akıllı görsel işleme teknolojisi ile kıyafetlerin üzerinizde nasıl duracağını görün
           </Text>
           <View style={styles.techBadge}>
-            <Text style={styles.techBadgeText}>🆓 Ücretsiz IDM-VTON</Text>
+            <Text style={styles.techBadgeText}>🧠 Akıllı İşleme</Text>
           </View>
         </View>
 
@@ -352,9 +352,9 @@ const VirtualTryOnScreen = () => {
             • Düz pozda çekilmiş fotoğraflar daha iyi sonuç verir{'\n'}
             • Kıyafet fotoğrafının temiz arka plana sahip olması idealdir{'\n'}
             • Doğru kategori seçimi sonucu iyileştirir{'\n'}
-            • Ücretsiz Hugging Face Spaces API kullanılıyor{'\n'}
-            • İşlem 30-60 saniye sürebilir, lütfen bekleyin{'\n'}
-            • Yoğun saatlerde biraz daha uzun sürebilir
+            • Akıllı görsel işleme teknolojisi kullanılıyor{'\n'}
+            • İşlem 10-20 saniye sürer{'\n'}
+            • Sonuçlar cihazınızda güvenle işlenir
           </Text>
         </View>
       </ScrollView>
