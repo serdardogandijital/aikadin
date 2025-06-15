@@ -28,6 +28,9 @@ const VirtualTryOnScreen = () => {
   const [progress, setProgress] = useState(0);
   const [processingStep, setProcessingStep] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'upper_body' | 'lower_body' | 'dresses' | 'full_body'>('upper_body');
+  
+  const progressRef = useRef(0);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const requestPermissions = async () => {
     const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
@@ -119,11 +122,12 @@ const VirtualTryOnScreen = () => {
 
     setIsProcessing(true);
     setProgress(0);
+    progressRef.current = 0;
     setResultImage(null);
     setProcessingStep('AI modeli başlatılıyor...');
 
     try {
-      // Simulate progress updates
+      // Progress steps
       const progressSteps = [
         { progress: 15, step: 'Akıllı işleme sistemi başlatılıyor...' },
         { progress: 30, step: 'Görsel analizi yapılıyor...' },
@@ -133,14 +137,23 @@ const VirtualTryOnScreen = () => {
         { progress: 95, step: 'Sonuç hazırlanıyor...' }
       ];
 
-      const progressInterval = setInterval(() => {
-        const currentStep = progressSteps.find(step => step.progress > progress);
-        if (currentStep && progress < 95) {
+      let stepIndex = 0;
+      
+      // Clear any existing interval
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+
+      intervalRef.current = setInterval(() => {
+        if (stepIndex < progressSteps.length && progressRef.current < 95) {
+          const currentStep = progressSteps[stepIndex];
+          progressRef.current = currentStep.progress;
           setProgress(currentStep.progress);
           setProcessingStep(currentStep.step);
           console.log(`📊 [VirtualTryOnScreen] Progress: ${currentStep.progress}% - ${currentStep.step}`);
+          stepIndex++;
         }
-      }, 2000);
+      }, 3000);
 
       console.log('🔄 [VirtualTryOnScreen] Calling virtualTryOnService...');
       const result = await virtualTryOnService.processVirtualTryOn({
@@ -149,7 +162,13 @@ const VirtualTryOnScreen = () => {
         category: selectedCategory
       });
 
-      clearInterval(progressInterval);
+      // Clear interval and set final progress
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      
+      progressRef.current = 100;
       setProgress(100);
       setProcessingStep('Tamamlandı!');
 
@@ -186,7 +205,15 @@ const VirtualTryOnScreen = () => {
       );
     } finally {
       console.log('🏁 [VirtualTryOnScreen] Process completed, cleaning up...');
+      
+      // Clean up interval
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      
       setIsProcessing(false);
+      progressRef.current = 0;
       setProgress(0);
       setProcessingStep('');
     }
@@ -196,7 +223,7 @@ const VirtualTryOnScreen = () => {
     if (!resultImage) return;
 
     try {
-      const savedUri = await virtualTryOnService.saveResultToDevice(resultImage);
+      const savedUri = await virtualTryOnService.saveToGallery(resultImage);
       Alert.alert('Başarılı', 'Görsel galerinize kaydedildi!');
     } catch (error) {
       Alert.alert('Hata', 'Görsel kaydedilemedi.');
