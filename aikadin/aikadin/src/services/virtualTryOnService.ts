@@ -349,6 +349,48 @@ class VirtualTryOnService {
       return false;
     }
   }
+
+  /**
+   * Test Replicate API connection
+   */
+  async testApiConnection(): Promise<{ success: boolean; message: string }> {
+    try {
+      console.log('🔍 Testing Replicate API connection...');
+      
+      if (!CONFIG.REPLICATE_API_KEY) {
+        return {
+          success: false,
+          message: 'API key not configured'
+        };
+      }
+
+      const response = await fetch('https://api.replicate.com/v1/models/yisol/idm-vton', {
+        headers: {
+          'Authorization': `Token ${CONFIG.REPLICATE_API_KEY}`,
+        }
+      });
+
+      if (response.ok) {
+        console.log('✅ Replicate API connection successful');
+        return {
+          success: true,
+          message: 'API connection successful - Ready for virtual try-on!'
+        };
+      } else {
+        console.error('❌ API connection failed:', response.status);
+        return {
+          success: false,
+          message: `API connection failed: ${response.status}`
+        };
+      }
+    } catch (error) {
+      console.error('❌ API test error:', error);
+      return {
+        success: false,
+        message: 'Network error - Check internet connection'
+      };
+    }
+  }
 }
 
 export default new VirtualTryOnService();
