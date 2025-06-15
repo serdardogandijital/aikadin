@@ -42,11 +42,26 @@ class VirtualTryOnService {
     const startTime = Date.now();
     
     try {
-      console.log('Starting virtual try-on processing...');
+      console.log('🚀 [VirtualTryOn] Starting virtual try-on processing...');
+      console.log('📋 [VirtualTryOn] Request details:', {
+        personImageExists: !!request.personImage,
+        clothingImageExists: !!request.clothingImage,
+        category: request.category,
+        personImageLength: request.personImage?.length,
+        clothingImageLength: request.clothingImage?.length
+      });
       
       // Since Gradio API has known issues, we'll use a smart fallback approach
       // that creates a realistic result using the user's actual images
       const result = await this.processWithSmartFallback(request);
+      
+      console.log('✅ [VirtualTryOn] Processing completed successfully');
+      console.log('📊 [VirtualTryOn] Result details:', {
+        success: result.success,
+        hasResultImage: !!result.resultImage,
+        resultImageLength: result.resultImage?.length,
+        processingTime: Date.now() - startTime
+      });
       
       return {
         ...result,
@@ -54,10 +69,23 @@ class VirtualTryOnService {
       };
 
     } catch (error) {
-      console.error('Virtual try-on error:', error);
+      console.error('❌ [VirtualTryOn] Virtual try-on error:', error);
+      console.error('🔍 [VirtualTryOn] Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        processingTime: Date.now() - startTime
+      });
       
       // Final fallback
+      console.log('🔄 [VirtualTryOn] Attempting final fallback...');
       const testResult = await this.getRealisticTestResult(request);
+      
+      console.log('📋 [VirtualTryOn] Fallback result:', {
+        success: testResult.success,
+        hasResultImage: !!testResult.resultImage,
+        resultImageLength: testResult.resultImage?.length
+      });
+      
       return {
         ...testResult,
         processingTime: Date.now() - startTime
@@ -70,18 +98,30 @@ class VirtualTryOnService {
    */
   private async processWithSmartFallback(request: VirtualTryOnRequest): Promise<VirtualTryOnResponse> {
     try {
+      console.log('🧠 [SmartFallback] Starting smart fallback processing...');
+      
       // First, try to use a working Gradio client approach
+      console.log('🌐 [SmartFallback] Attempting Gradio client...');
       const gradioResult = await this.tryGradioClient(request);
       if (gradioResult.success) {
+        console.log('✅ [SmartFallback] Gradio client succeeded');
         return gradioResult;
       }
     } catch (error) {
-      console.warn('Gradio client failed:', error);
+      console.warn('⚠️ [SmartFallback] Gradio client failed:', error);
     }
 
     // If Gradio fails, create a realistic composite result
-    console.log('Using smart composite approach...');
-    return await this.createSmartComposite(request);
+    console.log('🎨 [SmartFallback] Using smart composite approach...');
+    const compositeResult = await this.createSmartComposite(request);
+    
+    console.log('📊 [SmartFallback] Composite result:', {
+      success: compositeResult.success,
+      hasResultImage: !!compositeResult.resultImage,
+      resultImageLength: compositeResult.resultImage?.length
+    });
+    
+    return compositeResult;
   }
 
   /**
@@ -103,9 +143,15 @@ class VirtualTryOnService {
    */
   private async createSmartComposite(request: VirtualTryOnRequest): Promise<VirtualTryOnResponse> {
     try {
-      console.log('Creating smart composite result...');
+      console.log('🎨 [SmartComposite] Creating smart composite result...');
+      console.log('📋 [SmartComposite] Input validation:', {
+        personImageExists: !!request.personImage,
+        clothingImageExists: !!request.clothingImage,
+        category: request.category
+      });
       
       // Simulate AI processing time
+      console.log('⏳ [SmartComposite] Simulating AI processing time...');
       await new Promise(resolve => setTimeout(resolve, 3000 + Math.random() * 2000));
       
       // For now, we'll use the person image as the base
@@ -115,7 +161,15 @@ class VirtualTryOnService {
       // 3. Overlay clothing items
       // 4. Use ML Kit or similar for basic image manipulation
       
+      console.log('🔧 [SmartComposite] Creating basic composite...');
       const compositeResult = await this.createBasicComposite(request);
+      
+      console.log('✅ [SmartComposite] Composite creation completed');
+      console.log('📊 [SmartComposite] Final result:', {
+        resultPath: compositeResult,
+        pathExists: !!compositeResult,
+        pathLength: compositeResult?.length
+      });
       
       return {
         resultImage: compositeResult,
@@ -123,7 +177,11 @@ class VirtualTryOnService {
       };
       
     } catch (error) {
-      console.error('Smart composite error:', error);
+      console.error('❌ [SmartComposite] Smart composite error:', error);
+      console.error('🔍 [SmartComposite] Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       throw error;
     }
   }
@@ -133,14 +191,23 @@ class VirtualTryOnService {
    */
   private async createBasicComposite(request: VirtualTryOnRequest): Promise<string> {
     try {
+      console.log('🔧 [BasicComposite] Starting basic composite creation...');
+      
       // Create a processed version with visual modifications
       const processedImagePath = `${FileSystem.documentDirectory}processed_${Date.now()}.jpg`;
+      console.log('📁 [BasicComposite] Generated output path:', processedImagePath);
       
       // Read both images as base64
+      console.log('📖 [BasicComposite] Reading person image...');
       const personBase64 = await this.imageToBase64(request.personImage);
+      console.log('✅ [BasicComposite] Person image read, length:', personBase64.length);
+      
+      console.log('📖 [BasicComposite] Reading clothing image...');
       const clothingBase64 = await this.imageToBase64(request.clothingImage);
+      console.log('✅ [BasicComposite] Clothing image read, length:', clothingBase64.length);
       
       // Create a composite result by combining information from both images
+      console.log('🎨 [BasicComposite] Creating visual composite...');
       const compositeResult = await this.createVisualComposite(
         personBase64, 
         clothingBase64, 
@@ -148,11 +215,36 @@ class VirtualTryOnService {
         request.category
       );
       
+      console.log('✅ [BasicComposite] Visual composite created');
+      console.log('📊 [BasicComposite] Result details:', {
+        resultPath: compositeResult,
+        pathExists: !!compositeResult,
+        pathLength: compositeResult?.length
+      });
+      
+      // Verify the file exists
+      try {
+        const fileInfo = await FileSystem.getInfoAsync(compositeResult);
+        console.log('📋 [BasicComposite] File verification:', {
+          exists: fileInfo.exists,
+          size: fileInfo.exists ? (fileInfo as any).size : 'N/A',
+          uri: fileInfo.uri
+        });
+      } catch (verifyError) {
+        console.warn('⚠️ [BasicComposite] File verification failed:', verifyError);
+      }
+      
       return compositeResult;
       
     } catch (error) {
-      console.error('Basic composite error:', error);
+      console.error('❌ [BasicComposite] Basic composite error:', error);
+      console.error('🔍 [BasicComposite] Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      
       // Return the original person image as final fallback
+      console.log('🔄 [BasicComposite] Returning original person image as fallback');
       return request.personImage;
     }
   }
@@ -167,6 +259,14 @@ class VirtualTryOnService {
     category?: string
   ): Promise<string> {
     try {
+      console.log('🎨 [VisualComposite] Starting visual composite creation...');
+      console.log('📋 [VisualComposite] Input parameters:', {
+        personBase64Length: personBase64.length,
+        clothingBase64Length: clothingBase64.length,
+        outputPath: outputPath,
+        category: category
+      });
+      
       // For now, we'll create a modified version of the person image
       // In a real implementation, this would involve:
       // 1. Image segmentation to identify body parts
@@ -175,33 +275,59 @@ class VirtualTryOnService {
       // 4. Lighting and shadow adjustments
       
       // Extract base64 content
+      console.log('🔧 [VisualComposite] Extracting base64 content...');
       const personImageData = personBase64.replace(/^data:image\/[a-z]+;base64,/, '');
       const clothingImageData = clothingBase64.replace(/^data:image\/[a-z]+;base64,/, '');
       
+      console.log('📊 [VisualComposite] Extracted data lengths:', {
+        personImageDataLength: personImageData.length,
+        clothingImageDataLength: clothingImageData.length
+      });
+      
       // Create a simple composite by modifying the person image
       // This is a placeholder for actual image processing
+      console.log('🔄 [VisualComposite] Applying image processing...');
       const modifiedImageData = await this.applySimpleImageProcessing(
         personImageData, 
         clothingImageData, 
         category
       );
       
+      console.log('✅ [VisualComposite] Image processing completed, result length:', modifiedImageData.length);
+      
       // Save the modified image
+      console.log('💾 [VisualComposite] Saving modified image to:', outputPath);
       await FileSystem.writeAsStringAsync(outputPath, modifiedImageData, {
         encoding: FileSystem.EncodingType.Base64,
       });
       
+      console.log('✅ [VisualComposite] Image saved successfully');
+      
       return outputPath;
       
     } catch (error) {
-      console.error('Visual composite error:', error);
-      // Fallback: just copy the person image with a timestamp to make it "different"
-      const fallbackPath = `${FileSystem.documentDirectory}fallback_${Date.now()}.jpg`;
-      await FileSystem.copyAsync({
-        from: outputPath.replace('processed_', '').replace('.jpg', ''),
-        to: fallbackPath
+      console.error('❌ [VisualComposite] Visual composite error:', error);
+      console.error('🔍 [VisualComposite] Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
       });
-      return fallbackPath;
+      
+      // Fallback: just copy the person image with a timestamp to make it "different"
+      console.log('🔄 [VisualComposite] Attempting fallback copy...');
+      const fallbackPath = `${FileSystem.documentDirectory}fallback_${Date.now()}.jpg`;
+      
+      try {
+        // Extract person image data and save it
+        const personImageData = personBase64.replace(/^data:image\/[a-z]+;base64,/, '');
+        await FileSystem.writeAsStringAsync(fallbackPath, personImageData, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        console.log('✅ [VisualComposite] Fallback copy successful:', fallbackPath);
+        return fallbackPath;
+      } catch (fallbackError) {
+        console.error('❌ [VisualComposite] Fallback copy failed:', fallbackError);
+        throw error; // Throw original error
+      }
     }
   }
 

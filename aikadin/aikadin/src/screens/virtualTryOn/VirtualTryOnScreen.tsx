@@ -108,6 +108,15 @@ const VirtualTryOnScreen = () => {
       return;
     }
 
+    console.log('🚀 [VirtualTryOnScreen] Starting virtual try-on process...');
+    console.log('📋 [VirtualTryOnScreen] Input validation:', {
+      userImageExists: !!userImage,
+      clothingImageExists: !!clothingImage,
+      selectedCategory: selectedCategory,
+      userImageLength: userImage?.length,
+      clothingImageLength: clothingImage?.length
+    });
+
     setIsProcessing(true);
     setProgress(0);
     setResultImage(null);
@@ -129,9 +138,11 @@ const VirtualTryOnScreen = () => {
         if (currentStep && progress < 95) {
           setProgress(currentStep.progress);
           setProcessingStep(currentStep.step);
+          console.log(`📊 [VirtualTryOnScreen] Progress: ${currentStep.progress}% - ${currentStep.step}`);
         }
       }, 2000);
 
+      console.log('🔄 [VirtualTryOnScreen] Calling virtualTryOnService...');
       const result = await virtualTryOnService.processVirtualTryOn({
         personImage: userImage,
         clothingImage: clothingImage,
@@ -142,23 +153,39 @@ const VirtualTryOnScreen = () => {
       setProgress(100);
       setProcessingStep('Tamamlandı!');
 
+      console.log('📊 [VirtualTryOnScreen] Service result:', {
+        success: result.success,
+        hasResultImage: !!result.resultImage,
+        resultImageLength: result.resultImage?.length,
+        processingTime: result.processingTime,
+        error: result.error
+      });
+
       if (result.success && result.resultImage) {
+        console.log('✅ [VirtualTryOnScreen] Setting result image:', result.resultImage);
         setResultImage(result.resultImage);
         Alert.alert(
           'Başarılı!', 
           `Sanal deneme tamamlandı! ${result.processingTime ? `(${Math.round(result.processingTime / 1000)}s)` : ''}`
         );
       } else {
+        console.error('❌ [VirtualTryOnScreen] No result image or failed:', result);
         throw new Error(result.error || 'Bilinmeyen hata');
       }
 
     } catch (error) {
-      console.error('Virtual try-on error:', error);
+      console.error('❌ [VirtualTryOnScreen] Virtual try-on error:', error);
+      console.error('🔍 [VirtualTryOnScreen] Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      
       Alert.alert(
         'İşlem Hatası',
         'Sanal deneme işlemi gerçekleştirilemedi. Lütfen tekrar deneyin.'
       );
     } finally {
+      console.log('🏁 [VirtualTryOnScreen] Process completed, cleaning up...');
       setIsProcessing(false);
       setProgress(0);
       setProcessingStep('');
