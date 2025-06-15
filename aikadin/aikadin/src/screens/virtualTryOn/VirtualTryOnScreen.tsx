@@ -280,23 +280,41 @@ const VirtualTryOnScreen = () => {
     </View>
   );
 
-  const renderResult = () => (
-    <View style={styles.resultContainer}>
-      <Text style={styles.resultTitle}>🎉 Sanal Deneme Sonucu</Text>
-      <View style={styles.resultImageContainer}>
-        <Image source={{ uri: resultImage }} style={styles.resultImage} />
-        <View style={styles.resultOverlay}>
-          <TouchableOpacity style={styles.saveButton} onPress={saveResult}>
-            <MaterialIcons name="save-alt" size={20} color={theme.colors.primary.contrastText} />
-            <Text style={styles.saveButtonText}>Kaydet</Text>
-          </TouchableOpacity>
+  const renderResult = () => {
+    console.log('🖼️ [VirtualTryOnScreen] Rendering result:', {
+      resultImageExists: !!resultImage,
+      resultImageValue: resultImage,
+      isProcessing: isProcessing
+    });
+
+    if (!resultImage) {
+      console.log('⚠️ [VirtualTryOnScreen] No result image to render');
+      return null;
+    }
+
+    return (
+      <View style={styles.resultContainer}>
+        <Text style={styles.resultTitle}>🎉 Sanal Deneme Sonucu</Text>
+        <View style={styles.resultImageContainer}>
+          <Image 
+            source={{ uri: resultImage }} 
+            style={styles.resultImage}
+            onLoad={() => console.log('✅ [VirtualTryOnScreen] Result image loaded successfully')}
+            onError={(error) => console.error('❌ [VirtualTryOnScreen] Result image load error:', error)}
+          />
+          <View style={styles.resultOverlay}>
+            <TouchableOpacity style={styles.saveButton} onPress={saveResult}>
+              <MaterialIcons name="save-alt" size={20} color={theme.colors.primary.contrastText} />
+              <Text style={styles.saveButtonText}>Kaydet</Text>
+            </TouchableOpacity>
+          </View>
         </View>
+        <Text style={styles.resultDescription}>
+          Akıllı görsel işleme teknolojisi ile oluşturulan sanal deneme sonucu
+        </Text>
       </View>
-      <Text style={styles.resultDescription}>
-        Akıllı görsel işleme teknolojisi ile oluşturulan sanal deneme sonucu
-      </Text>
-    </View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -332,7 +350,21 @@ const VirtualTryOnScreen = () => {
 
         {isProcessing && renderProgressBar()}
 
-        {resultImage && !isProcessing && renderResult()}
+        {(() => {
+          console.log('🔍 [VirtualTryOnScreen] Main render check:', {
+            resultImageExists: !!resultImage,
+            isProcessing: isProcessing,
+            shouldShowResult: resultImage && !isProcessing
+          });
+          
+          if (resultImage && !isProcessing) {
+            console.log('✅ [VirtualTryOnScreen] Rendering result section');
+            return renderResult();
+          } else {
+            console.log('⚠️ [VirtualTryOnScreen] Not rendering result section');
+            return null;
+          }
+        })()}
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity
