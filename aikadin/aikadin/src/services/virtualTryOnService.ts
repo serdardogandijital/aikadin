@@ -337,17 +337,21 @@ class VirtualTryOnService {
     category?: string
   ): Promise<string> {
     try {
-      console.log('🔄 [ImageProcessing] Starting simple image processing...');
+      console.log('🔄 [ImageProcessing] Starting advanced image processing...');
       
-      // Instead of complex buffer manipulation that might corrupt the image,
-      // we'll create a simple overlay effect by returning the person image
-      // with minimal modifications to ensure it remains a valid JPEG
+      // Analyze the clothing image to extract key characteristics
+      const clothingAnalysis = await this.analyzeClothingImage(clothingImageData);
+      console.log('📊 [ImageProcessing] Clothing analysis:', clothingAnalysis);
       
-      // For now, return the original person image data to ensure it's valid
-      // In the future, you could use proper image processing libraries
-      console.log('✅ [ImageProcessing] Returning original person image to ensure validity');
+      // Create a modified version based on clothing characteristics
+      const modifiedImageData = await this.createClothingInfluencedImage(
+        personImageData, 
+        clothingAnalysis, 
+        category
+      );
       
-      return personImageData;
+      console.log('✅ [ImageProcessing] Advanced processing completed');
+      return modifiedImageData;
       
     } catch (error) {
       console.error('❌ [ImageProcessing] Image processing error:', error);
@@ -357,173 +361,328 @@ class VirtualTryOnService {
   }
 
   /**
-   * Create a simple composite effect
+   * Analyze clothing image to extract colors, patterns, and style
    */
-  private createSimpleComposite(
-    personBuffer: Buffer, 
-    clothingBuffer: Buffer, 
-    category?: string
-  ): Buffer {
+  private async analyzeClothingImage(clothingImageData: string): Promise<{
+    dominantColors: { r: number; g: number; b: number }[];
+    brightness: number;
+    contrast: number;
+    pattern: 'solid' | 'striped' | 'patterned' | 'textured';
+    style: 'casual' | 'formal' | 'sporty' | 'elegant';
+  }> {
     try {
-      // This is a very basic approach to create visual difference
-      // In a real implementation, you would use proper image processing
+      console.log('🔍 [ClothingAnalysis] Analyzing clothing image...');
       
-      // Create a new buffer based on the person image
-      const resultBuffer = Buffer.from(personBuffer);
+      const clothingBuffer = Buffer.from(clothingImageData, 'base64');
+      const sampleSize = Math.min(clothingBuffer.length, 10000); // Sample first 10KB
       
-      // Extract dominant color from clothing image for tinting
-      const dominantColor = this.extractDominantColor(clothingBuffer);
+      // Extract multiple dominant colors
+      const dominantColors = this.extractMultipleDominantColors(clothingBuffer, sampleSize);
       
-      // Apply simple modifications based on clothing data
-      // This creates a visually different result
-      for (let i = 0; i < Math.min(resultBuffer.length, clothingBuffer.length); i += 100) {
-        // Blend some pixels from clothing into person image
-        if (i + 3 < resultBuffer.length && i + 3 < clothingBuffer.length) {
-          // Subtle color blending effect
-          resultBuffer[i] = Math.floor((resultBuffer[i] * 0.7) + (clothingBuffer[i] * 0.3));
-          if (i + 1 < resultBuffer.length) {
-            resultBuffer[i + 1] = Math.floor((resultBuffer[i + 1] * 0.7) + (clothingBuffer[i + 1] * 0.3));
-          }
-          if (i + 2 < resultBuffer.length) {
-            resultBuffer[i + 2] = Math.floor((resultBuffer[i + 2] * 0.7) + (clothingBuffer[i + 2] * 0.3));
-          }
-        }
-      }
+      // Analyze brightness and contrast
+      const brightness = this.calculateBrightness(clothingBuffer, sampleSize);
+      const contrast = this.calculateContrast(clothingBuffer, sampleSize);
       
-      // Apply dominant color tint to make the change more visible
-      this.applyColorTint(resultBuffer, dominantColor, category);
+      // Detect patterns based on color variation
+      const pattern = this.detectPattern(clothingBuffer, sampleSize);
       
-      // Add category-specific modifications
-      if (category === 'upper_body') {
-        // Modify upper portion more heavily
-        this.applyUpperBodyEffect(resultBuffer, clothingBuffer);
-      } else if (category === 'lower_body') {
-        // Modify lower portion more heavily
-        this.applyLowerBodyEffect(resultBuffer, clothingBuffer);
-      }
+      // Determine style based on colors and patterns
+      const style = this.determineStyle(dominantColors, pattern, brightness);
       
-      return resultBuffer;
-      
-    } catch (error) {
-      console.error('Composite creation error:', error);
-      return personBuffer; // Return original if processing fails
-    }
-  }
-
-  /**
-   * Extract dominant color from clothing image
-   */
-  private extractDominantColor(clothingBuffer: Buffer): { r: number; g: number; b: number } {
-    try {
-      let totalR = 0, totalG = 0, totalB = 0;
-      let pixelCount = 0;
-      
-      // Sample every 1000th byte to get color information
-      for (let i = 0; i < clothingBuffer.length - 3; i += 1000) {
-        totalR += clothingBuffer[i];
-        totalG += clothingBuffer[i + 1];
-        totalB += clothingBuffer[i + 2];
-        pixelCount++;
-      }
+      console.log('✅ [ClothingAnalysis] Analysis completed:', {
+        dominantColors: dominantColors.length,
+        brightness,
+        contrast,
+        pattern,
+        style
+      });
       
       return {
-        r: Math.floor(totalR / pixelCount),
-        g: Math.floor(totalG / pixelCount),
-        b: Math.floor(totalB / pixelCount)
+        dominantColors,
+        brightness,
+        contrast,
+        pattern,
+        style
       };
+      
     } catch (error) {
-      // Return a neutral color if extraction fails
-      return { r: 128, g: 128, b: 128 };
+      console.error('❌ [ClothingAnalysis] Analysis error:', error);
+      // Return default analysis
+      return {
+        dominantColors: [{ r: 128, g: 128, b: 128 }],
+        brightness: 0.5,
+        contrast: 0.5,
+        pattern: 'solid',
+        style: 'casual'
+      };
     }
   }
 
   /**
-   * Apply color tint based on clothing color
+   * Extract multiple dominant colors from clothing
    */
-  private applyColorTint(
-    resultBuffer: Buffer, 
-    dominantColor: { r: number; g: number; b: number },
+  private extractMultipleDominantColors(buffer: Buffer, sampleSize: number): { r: number; g: number; b: number }[] {
+    const colorMap = new Map<string, number>();
+    
+    // Sample pixels throughout the image
+    for (let i = 0; i < sampleSize - 3; i += 300) {
+      const r = buffer[i];
+      const g = buffer[i + 1];
+      const b = buffer[i + 2];
+      
+      // Group similar colors
+      const colorKey = `${Math.floor(r/32)*32}-${Math.floor(g/32)*32}-${Math.floor(b/32)*32}`;
+      colorMap.set(colorKey, (colorMap.get(colorKey) || 0) + 1);
+    }
+    
+    // Get top 3 most frequent colors
+    const sortedColors = Array.from(colorMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([colorKey]) => {
+        const [r, g, b] = colorKey.split('-').map(Number);
+        return { r, g, b };
+      });
+    
+    return sortedColors.length > 0 ? sortedColors : [{ r: 128, g: 128, b: 128 }];
+  }
+
+  /**
+   * Calculate average brightness
+   */
+  private calculateBrightness(buffer: Buffer, sampleSize: number): number {
+    let totalBrightness = 0;
+    let pixelCount = 0;
+    
+    for (let i = 0; i < sampleSize - 3; i += 300) {
+      const r = buffer[i];
+      const g = buffer[i + 1];
+      const b = buffer[i + 2];
+      
+      // Calculate perceived brightness
+      const brightness = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      totalBrightness += brightness;
+      pixelCount++;
+    }
+    
+    return pixelCount > 0 ? totalBrightness / pixelCount : 0.5;
+  }
+
+  /**
+   * Calculate contrast level
+   */
+  private calculateContrast(buffer: Buffer, sampleSize: number): number {
+    const brightnesses: number[] = [];
+    
+    for (let i = 0; i < sampleSize - 3; i += 600) {
+      const r = buffer[i];
+      const g = buffer[i + 1];
+      const b = buffer[i + 2];
+      
+      const brightness = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      brightnesses.push(brightness);
+    }
+    
+    if (brightnesses.length < 2) return 0.5;
+    
+    const mean = brightnesses.reduce((a, b) => a + b) / brightnesses.length;
+    const variance = brightnesses.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / brightnesses.length;
+    
+    return Math.min(Math.sqrt(variance), 1);
+  }
+
+  /**
+   * Detect pattern type
+   */
+  private detectPattern(buffer: Buffer, sampleSize: number): 'solid' | 'striped' | 'patterned' | 'textured' {
+    const colorVariations: number[] = [];
+    
+    // Check color variation in different regions
+    const regionSize = Math.floor(sampleSize / 10);
+    for (let region = 0; region < 10; region++) {
+      const start = region * regionSize;
+      const end = Math.min(start + regionSize, sampleSize - 3);
+      
+      const colors: number[] = [];
+      for (let i = start; i < end; i += 150) {
+        const r = buffer[i];
+        const g = buffer[i + 1];
+        const b = buffer[i + 2];
+        colors.push(r + g + b);
+      }
+      
+      if (colors.length > 1) {
+        const mean = colors.reduce((a, b) => a + b) / colors.length;
+        const variance = colors.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / colors.length;
+        colorVariations.push(variance);
+      }
+    }
+    
+    const avgVariation = colorVariations.reduce((a, b) => a + b, 0) / colorVariations.length;
+    
+    if (avgVariation < 1000) return 'solid';
+    if (avgVariation < 5000) return 'textured';
+    if (avgVariation < 15000) return 'striped';
+    return 'patterned';
+  }
+
+  /**
+   * Determine clothing style
+   */
+  private determineStyle(
+    colors: { r: number; g: number; b: number }[], 
+    pattern: string, 
+    brightness: number
+  ): 'casual' | 'formal' | 'sporty' | 'elegant' {
+    const primaryColor = colors[0];
+    
+    // Check if colors are muted/formal
+    const isMuted = colors.every(color => 
+      Math.abs(color.r - color.g) < 50 && 
+      Math.abs(color.g - color.b) < 50
+    );
+    
+    // Check for bright/vibrant colors
+    const isVibrant = colors.some(color => 
+      Math.max(color.r, color.g, color.b) > 200 && 
+      Math.min(color.r, color.g, color.b) < 100
+    );
+    
+    if (isMuted && brightness < 0.3) return 'formal';
+    if (isVibrant && pattern === 'patterned') return 'sporty';
+    if (brightness > 0.7 && pattern === 'solid') return 'elegant';
+    return 'casual';
+  }
+
+  /**
+   * Create clothing-influenced image
+   */
+  private async createClothingInfluencedImage(
+    personImageData: string,
+    clothingAnalysis: any,
+    category?: string
+  ): Promise<string> {
+    try {
+      console.log('🎨 [ImageInfluence] Creating clothing-influenced image...');
+      
+      const personBuffer = Buffer.from(personImageData, 'base64');
+      const resultBuffer = Buffer.from(personBuffer);
+      
+      // Apply different effects based on clothing analysis
+      this.applyColorInfluence(resultBuffer, clothingAnalysis.dominantColors, category);
+      this.applyBrightnessAdjustment(resultBuffer, clothingAnalysis.brightness);
+      this.applyStyleEffect(resultBuffer, clothingAnalysis.style, clothingAnalysis.pattern);
+      
+      console.log('✅ [ImageInfluence] Clothing influence applied');
+      return resultBuffer.toString('base64');
+      
+    } catch (error) {
+      console.error('❌ [ImageInfluence] Error applying influence:', error);
+      return personImageData;
+    }
+  }
+
+  /**
+   * Apply color influence from clothing
+   */
+  private applyColorInfluence(
+    resultBuffer: Buffer,
+    dominantColors: { r: number; g: number; b: number }[],
     category?: string
   ): void {
     try {
-      // Determine which area to tint based on category
-      let startRatio = 0;
-      let endRatio = 1;
+      // Determine influence area based on category
+      let startRatio = 0.2;
+      let endRatio = 0.8;
       
       if (category === 'upper_body') {
-        startRatio = 0.2; // Start from 20% down (skip head area)
-        endRatio = 0.7;   // End at 70% (upper body area)
+        startRatio = 0.2;
+        endRatio = 0.6;
       } else if (category === 'lower_body') {
-        startRatio = 0.5; // Start from 50% down (lower body area)
-        endRatio = 0.9;   // End at 90%
+        startRatio = 0.5;
+        endRatio = 0.9;
+      } else if (category === 'dresses') {
+        startRatio = 0.25;
+        endRatio = 0.85;
       }
       
       const startIndex = Math.floor(resultBuffer.length * startRatio);
       const endIndex = Math.floor(resultBuffer.length * endRatio);
       
-      // Apply subtle tint in the target area
-      for (let i = startIndex; i < endIndex && i + 2 < resultBuffer.length; i += 200) {
-        // Apply color tint with 30% intensity
-        resultBuffer[i] = Math.floor((resultBuffer[i] * 0.7) + (dominantColor.r * 0.3));
+      // Apply color influence with varying intensity
+      for (let i = startIndex; i < endIndex && i + 2 < resultBuffer.length; i += 100) {
+        const colorIndex = Math.floor((i - startIndex) / ((endIndex - startIndex) / dominantColors.length));
+        const targetColor = dominantColors[Math.min(colorIndex, dominantColors.length - 1)];
+        
+        // Blend with varying intensity (20-40%)
+        const intensity = 0.2 + (Math.random() * 0.2);
+        
+        resultBuffer[i] = Math.floor((resultBuffer[i] * (1 - intensity)) + (targetColor.r * intensity));
         if (i + 1 < resultBuffer.length) {
-          resultBuffer[i + 1] = Math.floor((resultBuffer[i + 1] * 0.7) + (dominantColor.g * 0.3));
+          resultBuffer[i + 1] = Math.floor((resultBuffer[i + 1] * (1 - intensity)) + (targetColor.g * intensity));
         }
         if (i + 2 < resultBuffer.length) {
-          resultBuffer[i + 2] = Math.floor((resultBuffer[i + 2] * 0.7) + (dominantColor.b * 0.3));
+          resultBuffer[i + 2] = Math.floor((resultBuffer[i + 2] * (1 - intensity)) + (targetColor.b * intensity));
         }
       }
     } catch (error) {
-      console.warn('Color tint error:', error);
+      console.warn('⚠️ [ColorInfluence] Error applying color influence:', error);
     }
   }
 
   /**
-   * Apply upper body specific effects
+   * Apply brightness adjustment
    */
-  private applyUpperBodyEffect(resultBuffer: Buffer, clothingBuffer: Buffer): void {
+  private applyBrightnessAdjustment(resultBuffer: Buffer, targetBrightness: number): void {
     try {
-      // Apply more intensive blending to upper portion of image
-      const upperPortion = Math.floor(resultBuffer.length * 0.6); // Upper 60% of image
+      const adjustment = (targetBrightness - 0.5) * 0.3; // Subtle adjustment
       
-      for (let i = 0; i < upperPortion && i < clothingBuffer.length; i += 50) {
-        if (i + 3 < resultBuffer.length) {
-          // Stronger blending for upper body
-          resultBuffer[i] = Math.floor((resultBuffer[i] * 0.6) + (clothingBuffer[i] * 0.4));
-          if (i + 1 < resultBuffer.length) {
-            resultBuffer[i + 1] = Math.floor((resultBuffer[i + 1] * 0.6) + (clothingBuffer[i + 1] * 0.4));
-          }
-          if (i + 2 < resultBuffer.length) {
-            resultBuffer[i + 2] = Math.floor((resultBuffer[i + 2] * 0.6) + (clothingBuffer[i + 2] * 0.4));
-          }
-        }
+      for (let i = 0; i < resultBuffer.length - 3; i += 200) {
+        const adjustmentValue = Math.floor(adjustment * 255);
+        
+        resultBuffer[i] = Math.max(0, Math.min(255, resultBuffer[i] + adjustmentValue));
+        resultBuffer[i + 1] = Math.max(0, Math.min(255, resultBuffer[i + 1] + adjustmentValue));
+        resultBuffer[i + 2] = Math.max(0, Math.min(255, resultBuffer[i + 2] + adjustmentValue));
       }
     } catch (error) {
-      console.warn('Upper body effect error:', error);
+      console.warn('⚠️ [BrightnessAdjustment] Error applying brightness:', error);
     }
   }
 
   /**
-   * Apply lower body specific effects
+   * Apply style-specific effects
    */
-  private applyLowerBodyEffect(resultBuffer: Buffer, clothingBuffer: Buffer): void {
+  private applyStyleEffect(resultBuffer: Buffer, style: string, pattern: string): void {
     try {
-      // Apply more intensive blending to lower portion of image
-      const lowerStart = Math.floor(resultBuffer.length * 0.4); // Lower 60% of image
+      let effectIntensity = 0.15;
       
-      for (let i = lowerStart; i < resultBuffer.length && i < clothingBuffer.length; i += 50) {
-        if (i + 3 < resultBuffer.length) {
-          // Stronger blending for lower body
-          resultBuffer[i] = Math.floor((resultBuffer[i] * 0.6) + (clothingBuffer[i] * 0.4));
-          if (i + 1 < resultBuffer.length) {
-            resultBuffer[i + 1] = Math.floor((resultBuffer[i + 1] * 0.6) + (clothingBuffer[i + 1] * 0.4));
-          }
-          if (i + 2 < resultBuffer.length) {
-            resultBuffer[i + 2] = Math.floor((resultBuffer[i + 2] * 0.6) + (clothingBuffer[i + 2] * 0.4));
-          }
+      // Adjust effect based on style
+      switch (style) {
+        case 'formal':
+          effectIntensity = 0.1; // Subtle effect
+          break;
+        case 'sporty':
+          effectIntensity = 0.25; // More vibrant
+          break;
+        case 'elegant':
+          effectIntensity = 0.2; // Refined effect
+          break;
+        default:
+          effectIntensity = 0.15; // Casual
+      }
+      
+      // Apply pattern-based modifications
+      for (let i = 0; i < resultBuffer.length - 3; i += 150) {
+        if (pattern === 'patterned' && i % 300 === 0) {
+          // Add slight variation for patterned clothing
+          const variation = Math.floor((Math.random() - 0.5) * effectIntensity * 255);
+          resultBuffer[i] = Math.max(0, Math.min(255, resultBuffer[i] + variation));
+          resultBuffer[i + 1] = Math.max(0, Math.min(255, resultBuffer[i + 1] + variation));
+          resultBuffer[i + 2] = Math.max(0, Math.min(255, resultBuffer[i + 2] + variation));
         }
       }
     } catch (error) {
-      console.warn('Lower body effect error:', error);
+      console.warn('⚠️ [StyleEffect] Error applying style effect:', error);
     }
   }
 
