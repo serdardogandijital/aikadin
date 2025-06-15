@@ -17,7 +17,7 @@ interface VirtualTryOnResponse {
 
 class VirtualTryOnService {
   private readonly REPLICATE_API_URL = 'https://api.replicate.com/v1/predictions';
-  private readonly MODEL_VERSION = 'yisol/idm-vton:c871bb9b046607b680449ecbae55fd8c6d945e0a1948644bf2361b3d021d3ff4';
+  private readonly MODEL_VERSION = 'yisol/idm-vton:906425dbca90663ff5427624839572cc56ea7d380343d13e2a4c4b09d3f0c30f';
   private readonly timeout = 300000; // 5 minutes for AI processing
 
   /**
@@ -161,17 +161,38 @@ class VirtualTryOnService {
 
         const prediction = await response.json();
         console.log('📊 Prediction status:', prediction.status);
+        console.log('🔍 Full prediction object:', JSON.stringify(prediction, null, 2));
 
         if (prediction.status === 'succeeded') {
-          if (prediction.output && prediction.output.length > 0) {
-            const resultUrl = prediction.output[0];
-            console.log('✅ Result received:', resultUrl);
+          console.log('🎉 Prediction succeeded! Full output:', prediction.output);
+          
+          let resultUrl = null;
+          
+          // Handle different output formats from Replicate
+          if (prediction.output) {
+            if (Array.isArray(prediction.output) && prediction.output.length > 0) {
+              resultUrl = prediction.output[0];
+            } else if (typeof prediction.output === 'string') {
+              resultUrl = prediction.output;
+            } else if (prediction.output.image) {
+              resultUrl = prediction.output.image;
+            } else if (prediction.output.url) {
+              resultUrl = prediction.output.url;
+            }
+          }
+          
+          console.log('🔍 Extracted result URL:', resultUrl);
+          
+          if (resultUrl && resultUrl.startsWith('http')) {
+            console.log('✅ Valid result URL received:', resultUrl);
             
             // Download and save the result
             const localPath = await this.downloadResult(resultUrl);
             return localPath;
           } else {
-            throw new Error('No output received from prediction');
+            console.error('❌ Invalid result URL:', resultUrl);
+            console.error('📋 Full prediction output:', JSON.stringify(prediction.output, null, 2));
+            throw new Error('Invalid result URL received from API');
           }
         } else if (prediction.status === 'failed') {
           throw new Error(`Prediction failed: ${prediction.error || 'Unknown error'}`);
