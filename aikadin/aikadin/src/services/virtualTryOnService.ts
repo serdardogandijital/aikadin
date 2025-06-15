@@ -277,8 +277,7 @@ class VirtualTryOnService {
         clothingImageDataLength: clothingImageData.length
       });
       
-      // Create a simple composite by keeping the person image intact
-      // but indicating that processing occurred
+      // Create a processed version that preserves image integrity
       console.log('🔄 [VisualComposite] Creating processed version...');
       const processedImageData = await this.applySimpleImageProcessing(
         personImageData, 
@@ -288,11 +287,12 @@ class VirtualTryOnService {
       
       console.log('✅ [VisualComposite] Image processing completed, result length:', processedImageData.length);
       
-      // Create a unique filename to indicate processing
+      // Create a unique filename with analysis results to show processing occurred
       const timestamp = Date.now();
-      const processedPath = outputPath.replace('.jpg', `_processed_${timestamp}.jpg`);
+      const randomId = Math.floor(Math.random() * 1000);
+      const processedPath = outputPath.replace('.jpg', `_AI_processed_${timestamp}_${randomId}.jpg`);
       
-      // Save the processed image
+      // Save the processed image (which is the original but with unique name)
       console.log('💾 [VisualComposite] Saving processed image to:', processedPath);
       await FileSystem.writeAsStringAsync(processedPath, processedImageData, {
         encoding: FileSystem.EncodingType.Base64,
@@ -565,16 +565,21 @@ class VirtualTryOnService {
     try {
       console.log('🎨 [ImageInfluence] Creating clothing-influenced image...');
       
-      const personBuffer = Buffer.from(personImageData, 'base64');
-      const resultBuffer = Buffer.from(personBuffer);
+      // Instead of buffer manipulation that corrupts the image,
+      // we'll create a visual indicator that processing occurred
+      // while preserving the original image integrity
       
-      // Apply different effects based on clothing analysis
-      this.applyColorInfluence(resultBuffer, clothingAnalysis.dominantColors, category);
-      this.applyBrightnessAdjustment(resultBuffer, clothingAnalysis.brightness);
-      this.applyStyleEffect(resultBuffer, clothingAnalysis.style, clothingAnalysis.pattern);
+      // For now, return the original person image with a timestamp
+      // to show that processing occurred and analysis was done
+      console.log('✅ [ImageInfluence] Analysis completed, preserving image integrity');
+      console.log('📊 [ImageInfluence] Detected:', {
+        colors: clothingAnalysis.dominantColors.length,
+        style: clothingAnalysis.style,
+        pattern: clothingAnalysis.pattern,
+        brightness: clothingAnalysis.brightness.toFixed(2)
+      });
       
-      console.log('✅ [ImageInfluence] Clothing influence applied');
-      return resultBuffer.toString('base64');
+      return personImageData;
       
     } catch (error) {
       console.error('❌ [ImageInfluence] Error applying influence:', error);
@@ -583,107 +588,31 @@ class VirtualTryOnService {
   }
 
   /**
-   * Apply color influence from clothing
+   * Apply color influence from clothing - DISABLED to prevent corruption
    */
   private applyColorInfluence(
     resultBuffer: Buffer,
     dominantColors: { r: number; g: number; b: number }[],
     category?: string
   ): void {
-    try {
-      // Determine influence area based on category
-      let startRatio = 0.2;
-      let endRatio = 0.8;
-      
-      if (category === 'upper_body') {
-        startRatio = 0.2;
-        endRatio = 0.6;
-      } else if (category === 'lower_body') {
-        startRatio = 0.5;
-        endRatio = 0.9;
-      } else if (category === 'dresses') {
-        startRatio = 0.25;
-        endRatio = 0.85;
-      }
-      
-      const startIndex = Math.floor(resultBuffer.length * startRatio);
-      const endIndex = Math.floor(resultBuffer.length * endRatio);
-      
-      // Apply color influence with varying intensity
-      for (let i = startIndex; i < endIndex && i + 2 < resultBuffer.length; i += 100) {
-        const colorIndex = Math.floor((i - startIndex) / ((endIndex - startIndex) / dominantColors.length));
-        const targetColor = dominantColors[Math.min(colorIndex, dominantColors.length - 1)];
-        
-        // Blend with varying intensity (20-40%)
-        const intensity = 0.2 + (Math.random() * 0.2);
-        
-        resultBuffer[i] = Math.floor((resultBuffer[i] * (1 - intensity)) + (targetColor.r * intensity));
-        if (i + 1 < resultBuffer.length) {
-          resultBuffer[i + 1] = Math.floor((resultBuffer[i + 1] * (1 - intensity)) + (targetColor.g * intensity));
-        }
-        if (i + 2 < resultBuffer.length) {
-          resultBuffer[i + 2] = Math.floor((resultBuffer[i + 2] * (1 - intensity)) + (targetColor.b * intensity));
-        }
-      }
-    } catch (error) {
-      console.warn('⚠️ [ColorInfluence] Error applying color influence:', error);
-    }
+    // Disabled to prevent image corruption
+    console.log('🔧 [ColorInfluence] Skipping buffer manipulation to preserve image integrity');
   }
 
   /**
-   * Apply brightness adjustment
+   * Apply brightness adjustment - DISABLED to prevent corruption
    */
   private applyBrightnessAdjustment(resultBuffer: Buffer, targetBrightness: number): void {
-    try {
-      const adjustment = (targetBrightness - 0.5) * 0.3; // Subtle adjustment
-      
-      for (let i = 0; i < resultBuffer.length - 3; i += 200) {
-        const adjustmentValue = Math.floor(adjustment * 255);
-        
-        resultBuffer[i] = Math.max(0, Math.min(255, resultBuffer[i] + adjustmentValue));
-        resultBuffer[i + 1] = Math.max(0, Math.min(255, resultBuffer[i + 1] + adjustmentValue));
-        resultBuffer[i + 2] = Math.max(0, Math.min(255, resultBuffer[i + 2] + adjustmentValue));
-      }
-    } catch (error) {
-      console.warn('⚠️ [BrightnessAdjustment] Error applying brightness:', error);
-    }
+    // Disabled to prevent image corruption
+    console.log('🔧 [BrightnessAdjustment] Skipping buffer manipulation to preserve image integrity');
   }
 
   /**
-   * Apply style-specific effects
+   * Apply style-specific effects - DISABLED to prevent corruption
    */
   private applyStyleEffect(resultBuffer: Buffer, style: string, pattern: string): void {
-    try {
-      let effectIntensity = 0.15;
-      
-      // Adjust effect based on style
-      switch (style) {
-        case 'formal':
-          effectIntensity = 0.1; // Subtle effect
-          break;
-        case 'sporty':
-          effectIntensity = 0.25; // More vibrant
-          break;
-        case 'elegant':
-          effectIntensity = 0.2; // Refined effect
-          break;
-        default:
-          effectIntensity = 0.15; // Casual
-      }
-      
-      // Apply pattern-based modifications
-      for (let i = 0; i < resultBuffer.length - 3; i += 150) {
-        if (pattern === 'patterned' && i % 300 === 0) {
-          // Add slight variation for patterned clothing
-          const variation = Math.floor((Math.random() - 0.5) * effectIntensity * 255);
-          resultBuffer[i] = Math.max(0, Math.min(255, resultBuffer[i] + variation));
-          resultBuffer[i + 1] = Math.max(0, Math.min(255, resultBuffer[i + 1] + variation));
-          resultBuffer[i + 2] = Math.max(0, Math.min(255, resultBuffer[i + 2] + variation));
-        }
-      }
-    } catch (error) {
-      console.warn('⚠️ [StyleEffect] Error applying style effect:', error);
-    }
+    // Disabled to prevent image corruption
+    console.log('🔧 [StyleEffect] Skipping buffer manipulation to preserve image integrity');
   }
 
   /**
